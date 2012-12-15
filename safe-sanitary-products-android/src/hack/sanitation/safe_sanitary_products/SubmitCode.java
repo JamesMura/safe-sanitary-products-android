@@ -1,5 +1,8 @@
 package hack.sanitation.safe_sanitary_products;
 
+import com.littlefluffytoys.littlefluffylocationlibrary.LocationInfo;
+import com.littlefluffytoys.littlefluffylocationlibrary.LocationLibrary;
+
 import hack.sanitation.safe_sanitary_products.helper.IntentIntegrator;
 import hack.sanitation.safe_sanitary_products.helper.IntentResult;
 import android.os.AsyncTask;
@@ -21,10 +24,14 @@ public class SubmitCode extends Activity implements OnClickListener {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		LocationLibrary.initialiseLibrary(getBaseContext(),
+				"hack.sanitation.safe_sanitary_products");
 		setContentView(R.layout.activity_submit_code);
 		btnScanCode = (Button) findViewById(R.id.btnScanCode);
 		btnScanCode.setOnClickListener(this);
 		tvVerificationCode = (TextView) findViewById(R.id.tvVerificationCode);
+		LocationInfo latestInfo = new LocationInfo(getBaseContext());
+		displayMessage(latestInfo.toString());
 	}
 
 	@Override
