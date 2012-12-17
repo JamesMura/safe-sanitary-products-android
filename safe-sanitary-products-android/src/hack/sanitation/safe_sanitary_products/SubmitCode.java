@@ -9,20 +9,28 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.protocol.HTTP;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.View;
@@ -42,6 +50,7 @@ public class SubmitCode extends Activity implements OnClickListener {
 	SharedPreferences settings = null;
 	private ProgressDialog pd;
 	public static final String PREFS_SANSAFE = "sansafe-app";
+	public static final String DEV_URL = "http://safesan.herokuapp.com/verify";
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -54,7 +63,6 @@ public class SubmitCode extends Activity implements OnClickListener {
 		settings = getSharedPreferences(PREFS_SANSAFE, MODE_PRIVATE);
 		tvVerificationCode = (TextView) findViewById(R.id.tvVerificationCode);
 		LocationInfo latestInfo = new LocationInfo(getBaseContext());
-		displayMessage(latestInfo.toString());
 	}
 
 	@Override
@@ -82,7 +90,6 @@ public class SubmitCode extends Activity implements OnClickListener {
 		IntentResult scanResult = IntentIntegrator.parseActivityResult(
 				requestCode, resultCode, intent);
 		if (scanResult != null) {
-			displayMessage(scanResult.toString());
 			tvVerificationCode.setText(scanResult.getContents());
 			SendCodeToServerTask task = new SendCodeToServerTask();
 			task.execute(new Code(scanResult.getContents(), new LocationInfo(
@@ -96,15 +103,23 @@ public class SubmitCode extends Activity implements OnClickListener {
 		protected void onPostExecute(Product result) {
 			super.onPostExecute(result);
 			if (result.isFake()) {
-				Intent intent = new Intent(SubmitCode.this,
-						FakeItemActivity.class);
-				// intent.putExtra("id", position);
-				startActivity(intent);
+				// Intent intent = new Intent(SubmitCode.this,
+				// FakeItemActivity.class);
+				// // intent.putExtra("id", position);
+				// startActivity(intent);
+
+				displayMessage("The code scanned is not valid. The product may not ne genuine.");
+				tvVerificationCode.setBackgroundColor(Color.RED);
 
 			} else {
+				tvVerificationCode.setBackgroundColor(Color.GREEN);
 				Intent intent = new Intent(SubmitCode.this,
 						VerifiedItemActivity.class);
-				// intent.putExtra("id", position);
+				Gson gson = new GsonBuilder()
+						.excludeFieldsWithoutExposeAnnotation().create();
+				String jsonProduct = gson.toJson(result);
+
+				intent.putExtra("product", jsonProduct);
 				startActivity(intent);
 			}
 			pd.dismiss();
@@ -123,9 +138,18 @@ public class SubmitCode extends Activity implements OnClickListener {
 					.excludeFieldsWithoutExposeAnnotation().create();
 			String jsonCode = gson.toJson(params[0]);
 
-			HttpPost post = new HttpPost("http://192.168.1.50:8000");
+			HttpPost post = new HttpPost(DEV_URL);
+
+			List<NameValuePair> postParams = new ArrayList<NameValuePair>();
+			postParams.add(new BasicNameValuePair("actual_code", params[0]
+					.getActualCode()));
+
 			try {
-				post.setEntity(new StringEntity(jsonCode, "UTF8"));
+				UrlEncodedFormEntity entity = new UrlEncodedFormEntity(
+						postParams);
+				entity.setContentEncoding(HTTP.UTF_8);
+				entity.setContentType("application/json");
+				post.setEntity(entity);
 			} catch (UnsupportedEncodingException e1) {
 				e1.printStackTrace();
 			}
@@ -148,9 +172,28 @@ public class SubmitCode extends Activity implements OnClickListener {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			Product obj = gson.fromJson(br, Product.class);
+
+			String rep = getStringFromBuffer(br);
+			Log.e("DERE", rep);
+			Product obj = gson.fromJson(rep, Product.class);
 			return obj;
 
+		}
+
+		public String getStringFromBuffer(BufferedReader bRead) {
+
+			String line = null;
+			StringBuffer theText = new StringBuffer();
+			try {
+				while ((line = bRead.readLine()) != null) {
+					theText.append(line);
+				}
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+			return theText.toString();
 		}
 
 	}

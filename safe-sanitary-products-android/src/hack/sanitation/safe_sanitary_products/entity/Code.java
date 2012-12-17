@@ -16,6 +16,18 @@ public class Code {
 	@Expose
 	private int status;
 
+	public String getActualCode() {
+		return actualCode;
+	}
+
+	public float getLatitude() {
+		return latitude;
+	}
+
+	public float getLongitude() {
+		return longitude;
+	}
+
 	public Code(String code,LocationInfo location) {
 		actualCode = code;
 		latitude=location.lastLat;

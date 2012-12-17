@@ -36,6 +36,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name="hack.sanitation.safe_sanitary_products.VerifiedItemActivity"
+            android:label="@string/app_name" >
+             
+        </activity>
 
         <service android:name="com.littlefluffytoys.littlefluffylocationlibrary.LocationBroadcastService" />
 
